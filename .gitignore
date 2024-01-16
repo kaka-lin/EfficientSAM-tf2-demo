@@ -15,3 +15,6 @@
 *~
 __py
 __pycache__
+
+# image
+images/dogs_efficient_sam_vitt_mask.png
