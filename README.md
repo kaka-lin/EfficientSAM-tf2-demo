@@ -2,6 +2,16 @@
 
 Including: `tflite` and `TensorFlow.js`
 
+![](images/demo_points.png)
+
+## Examples
+
+1. TFLite model:
+
+    ```bash
+    $ python3 EfficientSAM_example.py
+    ```
+
 ## Acknowledgement
 
 + [SAM](https://github.com/facebookresearch/segment-anything)
