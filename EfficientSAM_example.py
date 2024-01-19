@@ -1,8 +1,17 @@
+import argparse
+
 import cv2
 import numpy as np
 import tensorflow as tf
 from PIL import Image
 import matplotlib.pyplot as plt
+
+
+def load_saved_model(model_path):
+    """ Load the saved model. """
+    # model = tf.saved_model.load(model_path)
+    model = tf.keras.models.load_model(model_path)
+    return model
 
 
 def load_tflite(model_path):
@@ -19,11 +28,16 @@ def load_tflite(model_path):
     return interpreter
 
 
-def main():
+def main(use_tflite):
     # Load pretrained EfficientSAM-Ti model
     model_name = "efficient_sam_vitt"
     tflite_path = "weights/efficient_sam_vitt.fp32.tflite"
-    model = load_tflite(tflite_path)
+    saved_model_path = "weights/saved_model"
+
+    if use_tflite:
+        model = load_tflite(tflite_path)
+    else:
+        model = load_saved_model(saved_model_path)
 
     # Run inference for both EfficientSAM-Ti and EfficientSAM-S models.
     test_image = cv2.imread("images/dogs.jpg")
@@ -36,22 +50,31 @@ def main():
     input_points = tf.constant([[[[500, 630], [580, 630]]]], dtype=tf.float32)
     input_labels = tf.constant([[[1, 1]]], dtype=tf.float32)
 
-    # Run inference with TFLite model.
-    # Get input and output tensors.
-    input_details = model.get_input_details()
-    output_details = model.get_output_details()
+    if use_tflite:
+        print("Run inference with TFLite model.")
+        # Run inference with TFLite model.
+        # Get input and output tensors.
+        input_details = model.get_input_details()
+        output_details = model.get_output_details()
 
-    # Set the value of the input tensor
-    model.set_tensor(input_details[0]['index'], input_labels)
-    model.set_tensor(input_details[1]['index'], input_image)
-    model.set_tensor(input_details[2]['index'], input_points)
+        # Set the value of the input tensor
+        model.set_tensor(input_details[0]['index'], input_labels)
+        model.set_tensor(input_details[1]['index'], input_image)
+        model.set_tensor(input_details[2]['index'], input_points)
 
-    # Run the model
-    model.invoke()
+        # Run the model
+        model.invoke()
 
-    # Get the Output data
-    predicted_logits = model.get_tensor(output_details[0]['index'])
-    predicted_iou = model.get_tensor(output_details[1]['index'])
+        # Get the Output data
+        predicted_logits = model.get_tensor(output_details[0]['index'])
+        predicted_iou = model.get_tensor(output_details[1]['index'])
+    else:
+        print("Run inference with SavedModel.")
+        predicted_logits, predicted_iou = model(
+            input_image,
+            input_points,
+            input_labels,
+        )
 
     mask = tf.greater_equal(predicted_logits[0, 0, 0, :, :], 0).numpy()
     masked_image_np = test_image.copy().astype(np.uint8) * mask[:, :, None]
@@ -68,4 +91,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--use_tflite", action="store_true", default=False, help="choose model type")
+    args, _ = parser.parse_known_args()
+    main(**vars(args))
+
