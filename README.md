@@ -6,10 +6,16 @@ Including: `tflite` and `TensorFlow.js`
 
 ## Examples
 
-1. TFLite model:
+1. `SavedModel`
 
     ```bash
     $ python3 EfficientSAM_example.py
+    ```
+
+2. TFLite model:
+
+    ```bash
+    $ python3 EfficientSAM_example.py --use_tflite
     ```
 
 ## Acknowledgement
