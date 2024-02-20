@@ -28,28 +28,7 @@ def load_tflite(model_path):
     return interpreter
 
 
-def main(use_tflite):
-    # Load pretrained EfficientSAM-Ti model
-    model_name = "efficient_sam_vitt"
-    tflite_path = "weights/efficient_sam_vitt.fp32.tflite"
-    saved_model_path = "weights/saved_model"
-
-    if use_tflite:
-        model = load_tflite(tflite_path)
-    else:
-        model = load_saved_model(saved_model_path)
-
-    # Run inference for both EfficientSAM-Ti and EfficientSAM-S models.
-    test_image = cv2.imread("images/dogs.jpg")
-    test_image = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
-    test_image = cv2.resize(test_image, (1024, 1024))
-    input_image = test_image / 255. # 進行圖像歸一處理
-    input_image = tf.expand_dims(input_image, axis=0) # (B, H, W, C)
-    input_image = tf.cast(input_image, dtype=tf.float32)
-
-    input_points = tf.constant([[[[500, 630], [580, 630]]]], dtype=tf.float32)
-    input_labels = tf.constant([[[1, 1]]], dtype=tf.float32)
-
+def run_model(model, input_image, input_points, input_labels, use_tflite):
     if use_tflite:
         print("Run inference with TFLite model.")
         # Run inference with TFLite model.
@@ -75,6 +54,59 @@ def main(use_tflite):
             input_points,
             input_labels,
         )
+
+    return predicted_logits, predicted_iou
+
+
+def main(use_tflite):
+    # Load pretrained EfficientSAM-Ti model
+    model_name = "efficient_sam_vitt"
+    tflite_path = "weights/efficient_sam_vitt.fp32.tflite"
+    saved_model_path = "weights/saved_model"
+
+    if use_tflite:
+        model = load_tflite(tflite_path)
+    else:
+        model = load_saved_model(saved_model_path)
+
+    # Run inference for both EfficientSAM-Ti and EfficientSAM-S models.
+    test_image = cv2.imread("images/dogs.jpg")
+    test_image = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
+    test_image = cv2.resize(test_image, (1024, 1024))
+    input_image = test_image / 255. # 進行圖像歸一處理
+    input_image = tf.expand_dims(input_image, axis=0) # (B, H, W, C)
+    input_image = tf.cast(input_image, dtype=tf.float32)
+
+    # Points Segmentations
+    input_points = tf.constant([[[[500, 630], [580, 630]]]], dtype=tf.float32)
+    input_labels = tf.constant([[[1, 1]]], dtype=tf.float32)
+
+    predicted_logits, predicted_iou = run_model(
+    model, input_image, input_points, input_labels, use_tflite)
+
+    mask = tf.greater_equal(predicted_logits[0, 0, 0, :, :], 0).numpy()
+    masked_image_np = test_image.copy().astype(np.uint8) * mask[:, :, None]
+    Image.fromarray(masked_image_np).save(f"images/dogs_{model_name}_mask.png")
+
+    # Visualize the results of EfficientSAM-Ti
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+    ax1.imshow(test_image)
+    ax1.axis("off")
+    ax2.imshow(masked_image_np)
+    ax2.axis("off")
+    fig.tight_layout()
+    plt.show()
+
+    # Box Segmentations
+    x1 = 385
+    y1 = 300
+    x2 = 800
+    y2 = 1000
+    input_points = tf.constant([[[[x1, y1], [x2, y2]]]], dtype=tf.float32)
+    input_labels = tf.constant([[[2, 3]]], dtype=tf.float32)
+
+    predicted_logits, predicted_iou = run_model(
+        model, input_image, input_points, input_labels, use_tflite)
 
     mask = tf.greater_equal(predicted_logits[0, 0, 0, :, :], 0).numpy()
     masked_image_np = test_image.copy().astype(np.uint8) * mask[:, :, None]
