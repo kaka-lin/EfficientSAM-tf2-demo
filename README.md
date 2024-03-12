@@ -18,6 +18,10 @@ Including: `tflite` and `TensorFlow.js`
     $ python3 EfficientSAM_example.py --use_tflite
     ```
 
+3. TensorFlow.js
+
+    Please see this repo [kaka-lin/tfjs-demo](https://github.com/kaka-lin/tfjs-demo)
+
 ## Acknowledgement
 
 + [SAM](https://github.com/facebookresearch/segment-anything)
