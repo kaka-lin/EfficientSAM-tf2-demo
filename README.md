@@ -22,6 +22,14 @@ Including: `tflite` and `TensorFlow.js`
 
     Please see this repo [kaka-lin/tfjs-demo](https://github.com/kaka-lin/tfjs-demo)
 
+4. WebUI that make with [Gradio](https://www.gradio.app/)
+
+    ```bash
+    $ gradio run.py
+    ```
+
+    ![](images/demo_webui.png)
+
 ## Acknowledgement
 
 + [SAM](https://github.com/facebookresearch/segment-anything)
