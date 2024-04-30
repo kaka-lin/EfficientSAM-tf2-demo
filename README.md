@@ -6,29 +6,29 @@ Including: `tflite` and `TensorFlow.js`
 
 ## Examples
 
-1. `SavedModel`
+#### 1. SavedModel
 
-    ```bash
-    $ python3 EfficientSAM_example.py
-    ```
+```bash
+$ python3 EfficientSAM_example.py
+```
 
-2. TFLite model:
+#### 2. TFLite model:
 
-    ```bash
-    $ python3 EfficientSAM_example.py --use_tflite
-    ```
+```bash
+$ python3 EfficientSAM_example.py --use_tflite
+```
 
-3. TensorFlow.js
+#### 3. TensorFlow.js
 
-    Please see this repo [kaka-lin/tfjs-demo](https://github.com/kaka-lin/tfjs-demo)
+Please see this repo [kaka-lin/tfjs-demo](https://github.com/kaka-lin/tfjs-demo)
 
-4. WebUI that make with [Gradio](https://www.gradio.app/)
+#### 4. WebUI that make with [Gradio](https://www.gradio.app/)
 
-    ```bash
-    $ gradio run.py
-    ```
+```bash
+$ gradio run.py
+```
 
-    ![](images/demo_webui.png)
+![](images/demo_webui.png)
 
 ## Acknowledgement
 
