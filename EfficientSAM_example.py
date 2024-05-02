@@ -6,26 +6,7 @@ import tensorflow as tf
 from PIL import Image
 import matplotlib.pyplot as plt
 
-
-def load_saved_model(model_path):
-    """ Load the saved model. """
-    # model = tf.saved_model.load(model_path)
-    model = tf.keras.models.load_model(model_path)
-    return model
-
-
-def load_tflite(model_path):
-    """ Run inference with TFLite model. """
-    interpreter = tf.lite.Interpreter(model_path=model_path)
-    interpreter.allocate_tensors()
-
-    # Get input and output tensors.
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-    # print(input_details)
-    # print(output_details)
-
-    return interpreter
+from utils.model import load_saved_model, load_tflite
 
 
 def run_model(model, input_image, input_points, input_labels, use_tflite):
@@ -58,18 +39,19 @@ def run_model(model, input_image, input_points, input_labels, use_tflite):
     return predicted_logits, predicted_iou
 
 
-def main(use_tflite):
-    # Load pretrained EfficientSAM-Ti model
+def main(use_tflite, model):
+    # Load pretrained EfficientSAM-S / EfficientSAM-Ti model
     model_name = "efficient_sam_vitt"
-    tflite_path = "weights/efficient_sam_vitt.fp32.tflite"
-    saved_model_path = "weights/saved_model"
+    if model == "small":
+        model_name = "efficient_sam_vits"
+    saved_model_path = f"weights/saved_model/{model_name}"
+    tflite_path = f"weights/{model_name}.fp32.tflite"
 
+    model = load_saved_model(saved_model_path)
     if use_tflite:
         model = load_tflite(tflite_path)
-    else:
-        model = load_saved_model(saved_model_path)
 
-    # Run inference for both EfficientSAM-Ti and EfficientSAM-S models.
+    # Processing the image
     test_image = cv2.imread("images/dogs.jpg")
     test_image = cv2.cvtColor(test_image, cv2.COLOR_BGR2RGB)
     test_image = cv2.resize(test_image, (1024, 1024))
@@ -81,6 +63,7 @@ def main(use_tflite):
     input_points = tf.constant([[[[500, 630], [580, 630]]]], dtype=tf.float32)
     input_labels = tf.constant([[[1, 1]]], dtype=tf.float32)
 
+    # Run inference for both EfficientSAM-Ti and EfficientSAM-S models.
     predicted_logits, predicted_iou = run_model(
     model, input_image, input_points, input_labels, use_tflite)
 
@@ -125,6 +108,7 @@ def main(use_tflite):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--use_tflite", action="store_true", default=False, help="choose model type")
+    parser.add_argument("--model", default='tiny', choices=['tiny', 'small'], help='Choose which model you want to use.')
     args, _ = parser.parse_known_args()
     main(**vars(args))
 

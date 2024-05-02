@@ -6,33 +6,14 @@ import tensorflow as tf
 from PIL import Image
 import matplotlib.pyplot as plt
 
+from utils.model import load_saved_model, load_tflite
+
 
 def blendSoftLight(base, blend):
     #out = np.where(blend < 0.5 * threshold, base, (np.sqrt(base)*(2.0*blend-1.0)+2.0*base*(1.0-blend)))
     saturation = 0.3
     out = ((np.sqrt(base)*blend+base*(1.0-blend))*saturation+base*(1.0-saturation))
     return out / 255
-
-
-def load_saved_model(model_path):
-    """ Load the saved model. """
-    # model = tf.saved_model.load(model_path)
-    model = tf.keras.models.load_model(model_path)
-    return model
-
-
-def load_tflite(model_path):
-    """ Run inference with TFLite model. """
-    interpreter = tf.lite.Interpreter(model_path=model_path)
-    interpreter.allocate_tensors()
-
-    # Get input and output tensors.
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-    # print(input_details)
-    # print(output_details)
-
-    return interpreter
 
 
 def run_model(model, input_image, input_points, input_labels, use_tflite):
@@ -65,16 +46,17 @@ def run_model(model, input_image, input_points, input_labels, use_tflite):
     return predicted_logits, predicted_iou
 
 
-def main(use_tflite):
-    # Load pretrained EfficientSAM-Ti model
+def main(use_tflite, model):
+    # Load pretrained EfficientSAM-S / EfficientSAM-Ti model
     model_name = "efficient_sam_vitt"
-    tflite_path = "weights/efficient_sam_vitt.fp32.tflite"
-    saved_model_path = "weights/saved_model"
+    if model == "small":
+        model_name = "efficient_sam_vits"
+    saved_model_path = f"weights/saved_model/{model_name}"
+    tflite_path = f"weights/{model_name}.fp32.tflite"
 
+    model = load_saved_model(saved_model_path)
     if use_tflite:
         model = load_tflite(tflite_path)
-    else:
-        model = load_saved_model(saved_model_path)
 
     # Run inference for both EfficientSAM-Ti and EfficientSAM-S models.
     test_image = cv2.imread("images/test.png")
@@ -117,5 +99,6 @@ def main(use_tflite):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--use_tflite", action="store_true", default=False, help="choose model type")
+    parser.add_argument("--model", default='tiny', choices=['tiny', 'small'], help='Choose which model you want to use.')
     args, _ = parser.parse_known_args()
     main(**vars(args))

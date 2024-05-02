@@ -5,14 +5,25 @@ import gradio as gr
 from gradio_image_prompter import ImagePrompter
 
 
-demo = gr.Blocks()
-# Load pretrained EfficientSAM-Ti model
-model_name = "efficient_sam_vitt"
-saved_model_path = "weights/saved_model"
-model = tf.keras.models.load_model(saved_model_path)
+def load_model():
+    """Load pretrained EfficientSAM-Ti & EfficientSAM-S model"""
+    models = {}
+    weight_names = ["efficient_sam_vitt", "efficient_sam_vits"]
+    model_names = ["EfficientSAM-Ti", "EfficientSAM-S"]
+    for weight_name, model_name in zip(weight_names, model_names):
+        saved_model_path = f"weights/saved_model/{weight_name}"
+        models[model_name] = tf.keras.models.load_model(saved_model_path)
+    return models
 
 
-def run_model(prompts):
+models = load_model()
+
+
+def run_model(prompts, model_name):
+    # Choose model
+    model = models[model_name]
+
+    # Load image and points
     test_image = prompts["image"]
     points_prompts = prompts["points"]
 
@@ -36,7 +47,7 @@ def run_model(prompts):
             input_labels.extend([points[2], points[5]])
 
     # rescale to 1024x1024 based on the original image size
-    input_points = np.array(input_points) * [scale_w, scale_h]
+    input_points = np.around(np.array(input_points) * [scale_w, scale_h])
     input_points = tf.reshape(tf.constant(input_points, dtype=tf.float32), [1, 1, -1, 2])
     input_labels = tf.reshape(tf.constant(input_labels, dtype=tf.float32), [1, 1, -1])
 
@@ -55,28 +66,34 @@ def run_model(prompts):
     return (masked_image_np, points_prompts)
 
 
-with demo:
-    gr.Markdown("EfficientSAM Demo")
+def sam_demo():
+    with gr.Blocks() as sam_interface:
+        gr.Markdown("EfficientSAM Demo")
 
-    with gr.Row():
-        with gr.Column():
-            image_file = ImagePrompter(show_label=False)
-            with gr.Row():
-                clear_button = gr.ClearButton()
-                prompt_button = gr.Button("Submit")
+        with gr.Row():
+            with gr.Column():
+                model_choose = gr.Dropdown(value="EfficientSAM-Ti", choices=["EfficientSAM-Ti", "EfficientSAM-S"], label="EfficientSAM Model")
+                image_data = ImagePrompter(show_label=False)
+                with gr.Row():
+                    clear_button = gr.ClearButton()
+                    prompt_button = gr.Button("Submit")
 
-        with gr.Column():
-            output_image = gr.Image(show_label=False, interactive=False)
-            output_points = gr.Dataframe(label="Points")
+            with gr.Column():
+                output_image = gr.Image(show_label=False, interactive=False)
+                output_points = gr.Dataframe(label="Points")
 
-    prompt_button.click(
-        run_model,
-        inputs=image_file,
-        outputs=[output_image, output_points])
+        prompt_button.click(
+            run_model,
+            inputs=[image_data, model_choose],
+            outputs=[output_image, output_points])
 
-    clear_button.add([image_file, output_image, output_points])
-    clear_button.click(lambda: None)
+        clear_button.add([image_data, output_image, output_points])
+        clear_button.click(lambda: None)
+
+    return sam_interface
 
 
 if __name__ == "__main__":
+    demo = sam_demo()
+    demo.queue()
     demo.launch()
