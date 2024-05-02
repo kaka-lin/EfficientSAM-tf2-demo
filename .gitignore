@@ -18,3 +18,7 @@ __pycache__
 
 # image
 images/dogs_efficient_sam_vitt_mask.png
+images/dogs_efficient_sam_vits_mask.png
+
+# weights
+weights/saved_model/efficient_sam_vits/
