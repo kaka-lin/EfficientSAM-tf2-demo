@@ -2,9 +2,19 @@
 
 Including: `tflite` and `TensorFlow.js`
 
-![](images/demo_points.png)
+<p>
+    <em>EfficienSAM-Ti</em>
+    <img src="images/demo_points.png" alt>
+</p>
+
+<p>
+    <em>EfficienSAM-S</em>
+    <img src="images/demo_points_vits.png" alt>
+</p>
 
 ## Examples
+
+By default, we are using `EfficientSAM-Ti`, if you want to use `EfficientSAM-S` just add an argument **`"--model small"`** to the below command.
 
 #### 1. SavedModel
 
@@ -25,7 +35,7 @@ Please see this repo [kaka-lin/tfjs-demo](https://github.com/kaka-lin/tfjs-demo)
 #### 4. WebUI that make with [Gradio](https://www.gradio.app/)
 
 ```bash
-$ gradio run.py
+$ python3 app.py
 ```
 
 ![](images/demo_webui.png)
