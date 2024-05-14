@@ -12,6 +12,7 @@
 *.pyc
 *.pro
 *.pyd
+*.pyi
 *~
 __py
 __pycache__
@@ -19,6 +20,7 @@ __pycache__
 # image
 images/dogs_efficient_sam_vitt_mask.png
 images/dogs_efficient_sam_vits_mask.png
+log/
 
 # weights
 weights/saved_model/efficient_sam_vits/

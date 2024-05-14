@@ -1,8 +1,27 @@
+import os
+
 import cv2
 import numpy as np
 import tensorflow as tf
 import gradio as gr
 from gradio_image_prompter import ImagePrompter
+
+from utils.ui_components import ToolButton
+
+
+def save_files(images):
+    fullfns = []
+
+    # make output dir
+    saved_path = "log/images/"
+    os.makedirs(saved_path, exist_ok=True)
+
+    # save image for download
+    output_image = saved_path + 'output.png'
+    cv2.imwrite(output_image, images)
+    fullfns.append(output_image)
+
+    return gr.File(value=fullfns, visible=True)
 
 
 def load_model():
@@ -82,10 +101,19 @@ def sam_demo():
                 output_image = gr.Image(show_label=False, interactive=False)
                 output_points = gr.Dataframe(label="Points")
 
+                save_button = ToolButton('💾', elem_id=f'save_sam')
+                download_files = gr.File(None, file_count="multiple", interactive=False, show_label=False, visible=False, elem_id=f'download_files_sam')
+
         prompt_button.click(
             run_model,
             inputs=[image_data, model_choose],
             outputs=[output_image, output_points])
+
+        save_button.click(
+            fn=save_files,
+            inputs=[output_image],
+            outputs=[download_files],
+        )
 
         clear_button.add([image_data, output_image, output_points])
         clear_button.click(lambda: None)
