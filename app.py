@@ -1,6 +1,7 @@
 import os
 
 import cv2
+from PIL import Image
 import numpy as np
 import tensorflow as tf
 import gradio as gr
@@ -18,7 +19,7 @@ def save_files(images):
 
     # save image for download
     output_image = saved_path + 'output.png'
-    cv2.imwrite(output_image, images)
+    Image.fromarray(images).save(output_image)
     fullfns.append(output_image)
 
     return gr.File(value=fullfns, visible=True)
@@ -38,21 +39,9 @@ def load_model():
 models = load_model()
 
 
-def run_model(prompts, model_name):
-    # Choose model
-    model = models[model_name]
-
-    # Load image and points
-    test_image = prompts["image"]
-    points_prompts = prompts["points"]
-
-    # processing the image
-    scale_h, scale_w = 1024 / test_image.shape[0], 1024 / test_image.shape[1]
-    test_image = cv2.resize(test_image, (1024, 1024))
-    input_image = test_image / 255. # 進行圖像歸一處理
-    input_image = tf.expand_dims(input_image, axis=0) # (B, H, W, C)
-    input_image = tf.cast(input_image, dtype=tf.float32)
-
+def process_points(points_prompts, scale_w, scale_h):
+    # input_points: [batch_size, num_queries, max_num_pts, 2], 2: x, y
+    # input_labels: [batch_size, num_queries, max_num_pts], 1: point, 2: box topleft, 3: box bottomright, 4: None
     input_points = []
     input_labels = []
     # processing the points to point and label
@@ -70,6 +59,27 @@ def run_model(prompts, model_name):
     input_points = tf.reshape(tf.constant(input_points, dtype=tf.float32), [1, 1, -1, 2])
     input_labels = tf.reshape(tf.constant(input_labels, dtype=tf.float32), [1, 1, -1])
 
+    return input_points, input_labels
+
+
+def run_model(prompts, model_name):
+    # Choose model
+    model = models[model_name]
+
+    # Load image and points
+    test_image = prompts["image"]
+    points_prompts = prompts["points"]
+
+    # processing the image
+    scale_h, scale_w = 1024 / test_image.shape[0], 1024 / test_image.shape[1]
+    test_image = cv2.resize(test_image, (1024, 1024))
+    input_image = test_image / 255. # 進行圖像歸一處理
+    input_image = tf.expand_dims(input_image, axis=0) # (B, H, W, C)
+    input_image = tf.cast(input_image, dtype=tf.float32)
+
+    # processing the `points_prompts` to point and label
+    input_points, input_labels = process_points(points_prompts, scale_w, scale_h)
+
     # Run inference.
     print('Running inference using ', model_name)
     predicted_logits, predicted_iou = model(
@@ -80,9 +90,21 @@ def run_model(prompts, model_name):
 
     # post processing
     mask = tf.greater_equal(predicted_logits[0, 0, 0, :, :], 0).numpy()
-    masked_image_np = test_image.copy().astype(np.uint8) * mask[:, :, None]
+    # masked_image_np = test_image.copy().astype(np.uint8) * mask[:, :, None]
 
-    return (masked_image_np, points_prompts)
+    # Generate a image matting with the mask
+    # make image that has alpha channel (background transparent)
+    #
+    # 1. Create an Alpha channel
+    alpha_channel = np.zeros_like(mask, dtype=np.uint8)
+    # 2. Set the foreground part in the mask to 255 (completely opaque)
+    alpha_channel[mask] = 255
+    # 3. Convert the original image to 4 channels (RGBA)
+    rgba_image = cv2.cvtColor(test_image, cv2.COLOR_RGB2RGBA)
+    # 4. Add the Alpha channel to the image
+    rgba_image[:, :, 3] = alpha_channel
+
+    return (rgba_image, points_prompts)
 
 
 def sam_demo():
@@ -98,7 +120,7 @@ def sam_demo():
                     prompt_button = gr.Button("Submit")
 
             with gr.Column():
-                output_image = gr.Image(show_label=False, interactive=False)
+                output_image = gr.Image(show_label=False, interactive=False, image_mode='RGBA')
                 output_points = gr.Dataframe(label="Points")
 
                 save_button = ToolButton('💾', elem_id=f'save_sam')
