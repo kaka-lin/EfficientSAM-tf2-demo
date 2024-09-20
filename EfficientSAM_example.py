@@ -69,14 +69,30 @@ def main(use_tflite, model):
 
     mask = tf.greater_equal(predicted_logits[0, 0, 0, :, :], 0).numpy()
     masked_image_np = test_image.copy().astype(np.uint8) * mask[:, :, None]
-    Image.fromarray(masked_image_np).save(f"images/dogs_{model_name}_mask.png")
+    Image.fromarray(masked_image_np).save(f"images/dogs_{model_name}_point_mask.png")
+
+    # Generate a image matting with the mask
+    # make image that has alpha channel (background transparent)
+    #
+    # 1. Create an Alpha channel
+    alpha_channel = np.zeros_like(mask, dtype=np.uint8)
+    # 2. Set the foreground part in the mask to 255 (completely opaque)
+    alpha_channel[mask] = 255
+    # 3. Convert the original image to 4 channels (RGBA)
+    rgba_image = cv2.cvtColor(test_image, cv2.COLOR_RGB2RGBA)
+    # 4. Add the Alpha channel to the image
+    rgba_image[:, :, 3] = alpha_channel
+    # 5. Save the image with alpha channel
+    Image.fromarray(rgba_image).save(f"images/dogs_{model_name}_point_mask_with_alpha.png")
 
     # Visualize the results of EfficientSAM-Ti
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4))
     ax1.imshow(test_image)
     ax1.axis("off")
     ax2.imshow(masked_image_np)
     ax2.axis("off")
+    ax3.imshow(rgba_image)
+    ax3.axis("off")
     fig.tight_layout()
     plt.show()
 
@@ -93,14 +109,30 @@ def main(use_tflite, model):
 
     mask = tf.greater_equal(predicted_logits[0, 0, 0, :, :], 0).numpy()
     masked_image_np = test_image.copy().astype(np.uint8) * mask[:, :, None]
-    Image.fromarray(masked_image_np).save(f"images/dogs_{model_name}_mask.png")
+    Image.fromarray(masked_image_np).save(f"images/dogs_{model_name}_box_mask.png")
+
+    # Generate a image matting with the mask
+    # make image that has alpha channel (background transparent)
+    #
+    # 1. Create an Alpha channel
+    alpha_channel = np.zeros_like(mask, dtype=np.uint8)
+    # 2. Set the foreground part in the mask to 255 (completely opaque)
+    alpha_channel[mask] = 255
+    # 3. Convert the original image to 4 channels (RGBA)
+    rgba_image = cv2.cvtColor(test_image, cv2.COLOR_RGB2RGBA)
+    # 4. Add the Alpha channel to the image
+    rgba_image[:, :, 3] = alpha_channel
+    # 5. Save the image with alpha channel
+    Image.fromarray(rgba_image).save(f"images/dogs_{model_name}_box_mask_with_alpha.png")
 
     # Visualize the results of EfficientSAM-Ti
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4))
     ax1.imshow(test_image)
     ax1.axis("off")
     ax2.imshow(masked_image_np)
     ax2.axis("off")
+    ax3.imshow(rgba_image)
+    ax3.axis("off")
     fig.tight_layout()
     plt.show()
 

@@ -18,8 +18,14 @@ __py
 __pycache__
 
 # image
-images/dogs_efficient_sam_vitt_mask.png
-images/dogs_efficient_sam_vits_mask.png
+images/dogs_efficient_sam_vitt_point_mask.png
+images/dogs_efficient_sam_vitt_point_mask_with_alpha.png
+images/dogs_efficient_sam_vitt_box_mask.png
+images/dogs_efficient_sam_vitt_box_mask_with_alpha.png
+images/dogs_efficient_sam_vits_point_mask.png
+images/dogs_efficient_sam_vits_point_mask_with_alpha.png
+images/dogs_efficient_sam_vits_box_mask.png
+images/dogs_efficient_sam_vits_box_mask_with_alpha.png
 log/
 
 # weights
