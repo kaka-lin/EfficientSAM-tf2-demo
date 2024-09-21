@@ -9,6 +9,23 @@ import matplotlib.pyplot as plt
 from utils.model import load_saved_model, load_tflite
 
 
+def gen_rgba_image(mask, model_name, original_image, mode="point"):
+    # Generate a image matting with the mask
+    # make image that has alpha channel (background transparent)
+    #
+    # 1. Create an Alpha channel
+    alpha_channel = np.zeros_like(mask, dtype=np.uint8)
+    # 2. Set the foreground part in the mask to 255 (completely opaque)
+    alpha_channel[mask] = 255
+    # 3. Convert the original image to 4 channels (RGBA)
+    rgba_image = cv2.cvtColor(original_image, cv2.COLOR_RGB2RGBA)
+    # 4. Add the Alpha channel to the image
+    rgba_image[:, :, 3] = alpha_channel
+    # 5. Save the image with alpha channel
+    Image.fromarray(rgba_image).save(f"images/dogs_{model_name}_{mode}_mask_with_alpha.png")
+    return rgba_image
+
+
 def run_model(model, input_image, input_points, input_labels, use_tflite):
     if use_tflite:
         print("Run inference with TFLite model.")
@@ -72,35 +89,11 @@ def main(use_tflite, model):
     Image.fromarray(masked_image_np).save(f"images/dogs_{model_name}_point_mask.png")
 
     # Generate a image matting with the mask
-    # make image that has alpha channel (background transparent)
-    #
-    # 1. Create an Alpha channel
-    alpha_channel = np.zeros_like(mask, dtype=np.uint8)
-    # 2. Set the foreground part in the mask to 255 (completely opaque)
-    alpha_channel[mask] = 255
-    # 3. Convert the original image to 4 channels (RGBA)
-    rgba_image = cv2.cvtColor(test_image, cv2.COLOR_RGB2RGBA)
-    # 4. Add the Alpha channel to the image
-    rgba_image[:, :, 3] = alpha_channel
-    # 5. Save the image with alpha channel
-    Image.fromarray(rgba_image).save(f"images/dogs_{model_name}_point_mask_with_alpha.png")
-
-    # Visualize the results of EfficientSAM-Ti
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4))
-    ax1.imshow(test_image)
-    ax1.axis("off")
-    ax2.imshow(masked_image_np)
-    ax2.axis("off")
-    ax3.imshow(rgba_image)
-    ax3.axis("off")
-    fig.tight_layout()
-    plt.show()
+    rgba_image_point = gen_rgba_image(mask, model_name, test_image, mode="point")
 
     # Box Segmentations
-    x1 = 385
-    y1 = 300
-    x2 = 800
-    y2 = 1000
+    x1, y1 = (385, 300)
+    x2, y2 = (800, 1000)
     input_points = tf.constant([[[[x1, y1], [x2, y2]]]], dtype=tf.float32)
     input_labels = tf.constant([[[2, 3]]], dtype=tf.float32)
 
@@ -112,26 +105,19 @@ def main(use_tflite, model):
     Image.fromarray(masked_image_np).save(f"images/dogs_{model_name}_box_mask.png")
 
     # Generate a image matting with the mask
-    # make image that has alpha channel (background transparent)
-    #
-    # 1. Create an Alpha channel
-    alpha_channel = np.zeros_like(mask, dtype=np.uint8)
-    # 2. Set the foreground part in the mask to 255 (completely opaque)
-    alpha_channel[mask] = 255
-    # 3. Convert the original image to 4 channels (RGBA)
-    rgba_image = cv2.cvtColor(test_image, cv2.COLOR_RGB2RGBA)
-    # 4. Add the Alpha channel to the image
-    rgba_image[:, :, 3] = alpha_channel
-    # 5. Save the image with alpha channel
-    Image.fromarray(rgba_image).save(f"images/dogs_{model_name}_box_mask_with_alpha.png")
+    rgba_image_box = gen_rgba_image(mask, model_name, test_image, mode="box")
 
     # Visualize the results of EfficientSAM-Ti
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4))
+    fig.canvas.manager.set_window_title('EfficientSAM Example')
+    ax1.set_title("Original Image")
     ax1.imshow(test_image)
     ax1.axis("off")
-    ax2.imshow(masked_image_np)
+    ax2.set_title("Point Segmentation")
+    ax2.imshow(rgba_image_point)
     ax2.axis("off")
-    ax3.imshow(rgba_image)
+    ax3.set_title("Box Segmentation")
+    ax3.imshow(rgba_image_box)
     ax3.axis("off")
     fig.tight_layout()
     plt.show()
@@ -143,4 +129,3 @@ if __name__ == "__main__":
     parser.add_argument("--model", default='tiny', choices=['tiny', 'small'], help='Choose which model you want to use.')
     args, _ = parser.parse_known_args()
     main(**vars(args))
-
